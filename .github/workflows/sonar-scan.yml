@@ -3,7 +3,7 @@ name: SonarScan
 on:
   push:
     branches:
-      - TestSonarScan
+      - next
   pull_request:
     types: [opened, synchronize, reopened]
 
@@ -17,22 +17,25 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Setup Node
+        uses: actions/setup-node@v6
+        with:
+          node-version-file: .nvmrc
+          cache: yarn
+
+      - name: Install dependencies
+        run: yarn install --immutable
+
+      - name: Build Contact Center widgets
+        run: yarn build:dev
+
       - uses: SonarSource/sonarqube-scan-action@v6
         env:
-          # The scanner action reads these environment variables as the
-          # sonar.host.url and sonar.token analysis parameters.
+          # These environment variables provide sonar.host.url and sonar.token
+          # without exposing the token in command arguments or logs.
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
           SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
         with:
           args: >
-            -Dsonar.projectKey=webex-widgets
-            -Dsonar.projectName=webex-widgets
             -Dsonar.projectVersion=${{ github.run_number }}-${{ github.sha }}
             ${{ github.event_name == 'push' && format('-Dsonar.branch.name={0}', github.ref_name) || '' }}
-            -Dsonar.sources=packages/contact-center
-            -Dsonar.sourceEncoding=UTF-8
-            -Dsonar.javascript.node.maxspace=8192
-            -Dsonar.javascript.node.debugMemory=true
-            -Dsonar.javascript.createTSProgramForOrphanFiles=false
-            -Dsonar.typescript.tsconfigPaths=packages/contact-center/ai-assistant/tsconfig.json,packages/contact-center/cc-components/tsconfig.json,packages/contact-center/cc-digital-channels/tsconfig.json,packages/contact-center/cc-widgets/tsconfig.json,packages/contact-center/station-login/tsconfig.json,packages/contact-center/store/tsconfig.json,packages/contact-center/task/tsconfig.json,packages/contact-center/test-fixtures/tsconfig.json,packages/contact-center/ui-logging/tsconfig.json,packages/contact-center/user-state/tsconfig.json
-            -Dsonar.exclusions=**/node_modules/**,**/dist/**,**/coverage/**,**/tests/**,**/*.test.ts,**/*.test.tsx,**/*.spec.ts,**/*.spec.tsx,**/*.js.map,**/*.min.js,**/*.bundle.js,**/docs/**
