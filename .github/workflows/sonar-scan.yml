@@ -3,10 +3,12 @@ name: SonarScan
 on:
   push:
     branches:
+      - TestSonarScan
       - next
   pull_request:
     types: [opened, synchronize, reopened]
-
+  workflow_dispatch:
+  
 jobs:
   build:
     name: SonarQube
