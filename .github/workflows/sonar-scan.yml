@@ -10,21 +10,29 @@ on:
 jobs:
   build:
     name: Build and analyze
-    runs-on: macos-latest
-    
+    runs-on: ubuntu-latest
+
     steps:
       - uses: actions/checkout@v4
         with:
-          fetch-depth: 0  # Shallow clones should be disabled for a better relevancy of analysis
+          fetch-depth: 0
+
       - uses: SonarSource/sonarqube-scan-action@v6
         env:
+          # The scanner action reads these environment variables as the
+          # sonar.host.url and sonar.token analysis parameters.
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
           SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
-      # If you wish to fail your job when the Quality Gate is red, uncomment the
-      # following lines. This would typically be used to fail a deployment.
-      # We do not recommend to use this in a pull request. Prefer using pull request
-      # decoration instead.
-      # - uses: SonarSource/sonarqube-quality-gate-action@v1
-      #   timeout-minutes: 5
-      #   env:
-      #     SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        with:
+          args: >
+            -Dsonar.projectKey=webex-widgets
+            -Dsonar.projectName=webex-widgets
+            -Dsonar.projectVersion=${{ github.run_number }}-${{ github.sha }}
+            ${{ github.event_name == 'push' && format('-Dsonar.branch.name={0}', github.ref_name) || '' }}
+            -Dsonar.sources=packages/contact-center
+            -Dsonar.sourceEncoding=UTF-8
+            -Dsonar.javascript.node.maxspace=8192
+            -Dsonar.javascript.node.debugMemory=true
+            -Dsonar.javascript.createTSProgramForOrphanFiles=false
+            -Dsonar.typescript.tsconfigPaths=packages/contact-center/ai-assistant/tsconfig.json,packages/contact-center/cc-components/tsconfig.json,packages/contact-center/cc-digital-channels/tsconfig.json,packages/contact-center/cc-widgets/tsconfig.json,packages/contact-center/station-login/tsconfig.json,packages/contact-center/store/tsconfig.json,packages/contact-center/task/tsconfig.json,packages/contact-center/test-fixtures/tsconfig.json,packages/contact-center/ui-logging/tsconfig.json,packages/contact-center/user-state/tsconfig.json
+            -Dsonar.exclusions=**/node_modules/**,**/dist/**,**/coverage/**,**/tests/**,**/*.test.ts,**/*.test.tsx,**/*.spec.ts,**/*.spec.tsx,**/*.js.map,**/*.min.js,**/*.bundle.js,**/docs/**
